@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="An inspectable tabular Q-learning market-maker, frozen test policy and exact finite-model benchmark. Synthetic only."
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="theme-color" content="#281f36" />
+    <title>QuotientQ - learn the quote</title>
+    <link rel="icon" href="icon.svg" />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#experiment">Skip to experiment</a>
+    <header>
+      <a class="brand" href="#">quotient<span>Q</span></a
+      ><span class="stamp">FINITE STATE / OPEN TABLE</span
+      ><a href="#method">Under the hood ↗</a>
+    </header>
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">REINFORCEMENT LEARNING / MARKET MAKING</p>
+          <h1>Learn the quote.<br /><em>Question the reward.</em></h1>
+          <p class="intro">
+            A small dealer learns from sampled fills, freezes its policy, and
+            faces a separate synthetic test. Every state has a number. Every
+            number has a limit.
+          </p>
+          <div class="tags">
+            <span>120 states</span><span>3 quoting actions</span
+            ><span>No real orders</span>
+          </div>
+        </div>
+        <aside>
+          <p class="eyebrow">ONE UPDATE, NOT A PROMISE</p>
+          <div class="equation">
+            Q <span>←</span> Q + α <i>[</i>r + max Q′ − Q<i>]</i>
+          </div>
+          <p>
+            Reward includes inventory penalties.<br />More reward does not mean
+            more cash.
+          </p>
+          <div class="mini">
+            <span>OBSERVE</span><b>→</b><span>QUOTE</span><b>→</b
+            ><span>LEARN</span>
+          </div>
+        </aside>
+      </section>
+      <section id="experiment" class="experiment">
+        <div class="section-top">
+          <div>
+            <p class="eyebrow">01 / TRAIN, THEN FREEZE</p>
+            <h2>A table, not a black box.</h2>
+          </div>
+          <button id="reset" type="button">Reset ↺</button>
+        </div>
+        <div class="controls">
+          <label
+            >Training episodes<select id="budget">
+              <option value="0">2,000 · small budget</option>
+              <option value="1">12,000 · larger budget</option>
+            </select></label
+          ><label
+            >Frozen-policy test environment<select id="stress">
+              <option value="0">Same synthetic fill law</option>
+              <option value="1">Stronger adverse fills · no retrain</option>
+            </select></label
+          >
+          <p>
+            12 steps per episode · ε = 0.2<br />512 separate-seed test episodes
+          </p>
+        </div>
+        <p id="status" role="status" aria-live="polite"></p>
+        <div class="metrics">
+          <article>
+            <span>LEARNED: EXACT MODEL OBJECTIVE</span
+            ><strong id="exact"></strong
+            ><small>Expected penalized reward, not expected cash</small>
+          </article>
+          <article>
+            <span>GAP TO MODEL OPTIMUM</span><strong id="gap"></strong
+            ><small>Exact expectation gap, not a pathwise bound</small>
+          </article>
+          <article>
+            <span>VISITED STATE-ACTION ENTRIES</span
+            ><strong id="coverage"></strong
+            ><small>Out of 360, including unreachable early states</small>
+          </article>
+        </div>
+      </section>
+      <section class="panel scorecard">
+        <div class="section-top">
+          <div>
+            <p class="eyebrow">02 / SEPARATE THE SCORE FROM THE CASH</p>
+            <h2>One test. Three policies.</h2>
+          </div>
+          <span class="unit">ARBITRARY PRICE UNITS</span>
+        </div>
+        <div
+          class="table-wrap"
+          tabindex="0"
+          role="region"
+          aria-label="Policy comparison, horizontally scrollable"
+        >
+          <table>
+            <caption>
+              512 paired synthetic episodes. Common base uniforms,
+              policy-dependent fills. No strategy ranking claim.
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Policy</th>
+                <th scope="col">Exact expected objective</th>
+                <th scope="col">Test mean objective</th>
+                <th scope="col">Test mean PnL</th>
+                <th scope="col">Mean penalty</th>
+                <th scope="col">RMS inventory</th>
+                <th scope="col">Mean fills</th>
+              </tr>
+            </thead>
+            <tbody id="scores"></tbody>
+          </table>
+        </div>
+        <p class="caption">
+          The model oracle knows the test transition law and solves it by
+          backward induction. It is not trained, not a clairvoyant path trader,
+          and not a real-market upper bound. A finite test sample can reverse
+          expected-value rankings.
+        </p>
+      </section>
+      <section class="policy-section">
+        <div class="section-top">
+          <div>
+            <p class="eyebrow">03 / READ THE FROZEN POLICY</p>
+            <h2>What does it quote, and when?</h2>
+          </div>
+          <p class="legend">
+            <span class="tight">T tight</span><span class="wide">W wide</span
+            ><span class="skew">S inventory skew</span>
+          </p>
+        </div>
+        <p class="caption">
+          Select a state to inspect its values and visits. Columns: prior
+          inventory. Rows: steps remaining. Faded cells cannot be reached from
+          the zero-inventory start. An orange corner means the learned action
+          differs from the test-model oracle.
+        </p>
+        <div class="maps">
+          <article class="panel">
+            <h3>Observed signal −1</h3>
+            <div
+              id="map-negative"
+              class="policy-map"
+              role="group"
+              aria-label="Learned policy for signal minus one"
+            ></div>
+          </article>
+          <article class="panel">
+            <h3>Observed signal +1</h3>
+            <div
+              id="map-positive"
+              class="policy-map"
+              role="group"
+              aria-label="Learned policy for signal plus one"
+            ></div>
+          </article>
+          <article class="audit">
+            <p class="eyebrow">SELECTED STATE</p>
+            <h3 id="state-title"></h3>
+            <p id="state-note"></p>
+            <dl>
+              <div>
+                <dt>Learned action</dt>
+                <dd id="chosen"></dd>
+              </div>
+              <div>
+                <dt>Oracle action</dt>
+                <dd id="oracle-action"></dd>
+              </div>
+            </dl>
+            <table>
+              <caption>
+                Learned Q estimates and sampled update counts
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Action</th>
+                  <th scope="col">Q estimate</th>
+                  <th scope="col">Visits</th>
+                </tr>
+              </thead>
+              <tbody id="state-values"></tbody>
+            </table>
+            <p class="caption">
+              All Q values start at zero. Finite visits are not convergence.
+              Fixed ε-greedy exploration stops before evaluation.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section class="charts">
+        <article class="panel">
+          <p class="eyebrow">04 / TRAINING IS NOT THE TEST</p>
+          <h2>Exploring reward, block by block</h2>
+          <canvas
+            id="learning"
+            aria-label="Mean exploring training reward per block of 200 episodes"
+          ></canvas>
+          <p class="caption">
+            Each point averages 200 training episodes under ε = 0.2. This is
+            neither greedy-policy test performance nor a convergence
+            certificate. Budgets share a training prefix; more episodes need not
+            improve every outcome.
+          </p>
+        </article>
+        <article class="panel">
+          <p class="eyebrow">05 / THE PAIRED TEST IS A DISTRIBUTION</p>
+          <h2>Learned minus fixed-skew objective</h2>
+          <canvas
+            id="paired"
+            aria-label="Histogram of paired episode penalized reward differences"
+          ></canvas>
+          <p class="caption">
+            512 differences on shared exogenous uniforms. Each policy still
+            generates its own fills. This is one fixed-seed toy sample, not
+            market alpha or evidence of statistical significance.
+          </p>
+        </article>
+      </section>
+      <section class="panel ledgers">
+        <div class="section-top">
+          <div>
+            <p class="eyebrow">06 / NOTHING UNDER THE TABLE</p>
+            <h2>Inspect the evidence.</h2>
+          </div>
+          <button id="download" type="button">Export complete JSON ↓</button>
+        </div>
+        <details>
+          <summary>
+            All 120 learned states, values, visits and oracle actions
+          </summary>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="region"
+            aria-label="All states, scroll horizontally"
+          >
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">h</th>
+                  <th scope="col">q</th>
+                  <th scope="col">Signal</th>
+                  <th scope="col">Reachable?</th>
+                  <th scope="col">Learned</th>
+                  <th scope="col">Oracle</th>
+                  <th scope="col">Q tight</th>
+                  <th scope="col">Q wide</th>
+                  <th scope="col">Q skew</th>
+                  <th scope="col">N tight</th>
+                  <th scope="col">N wide</th>
+                  <th scope="col">N skew</th>
+                </tr>
+              </thead>
+              <tbody id="state-rows"></tbody>
+            </table>
+          </div>
+        </details>
+        <details>
+          <summary>
+            All 512 paired test episodes: cash, penalty and objective
+          </summary>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="region"
+            aria-label="All test episodes, scroll horizontally"
+          >
+            <table>
+              <caption>
+                L learned / F fixed skew / O model oracle; PnL after terminal
+                exit
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">L PnL</th>
+                  <th scope="col">L penalty</th>
+                  <th scope="col">L objective</th>
+                  <th scope="col">F PnL</th>
+                  <th scope="col">F penalty</th>
+                  <th scope="col">F objective</th>
+                  <th scope="col">O PnL</th>
+                  <th scope="col">O penalty</th>
+                  <th scope="col">O objective</th>
+                </tr>
+              </thead>
+              <tbody id="episode-rows"></tbody>
+            </table>
+          </div>
+        </details>
+        <details>
+          <summary>
+            Episode 1: every quote, fill and accounting step, all three policies
+          </summary>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            role="region"
+            aria-label="Episode one steps, scroll horizontally"
+          >
+            <table>
+              <caption>
+                Cash/marked wealth before final exit; last reward already
+                deducts exit cost
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Policy</th>
+                  <th scope="col">Step</th>
+                  <th scope="col">q before</th>
+                  <th scope="col">Signal</th>
+                  <th scope="col">Action</th>
+                  <th scope="col">Bid dist.</th>
+                  <th scope="col">Ask dist.</th>
+                  <th scope="col">Buy</th>
+                  <th scope="col">Sell</th>
+                  <th scope="col">Move</th>
+                  <th scope="col">q after</th>
+                  <th scope="col">Cash</th>
+                  <th scope="col">Marked</th>
+                  <th scope="col">Penalty</th>
+                  <th scope="col">Exit cost</th>
+                  <th scope="col">Reward</th>
+                </tr>
+              </thead>
+              <tbody id="example-rows"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+      <section id="method" class="method">
+        <div>
+          <p class="eyebrow">ASSUMPTIONS / NOT OPTIONAL</p>
+          <h2>The market is invented.<br />The learning is sampled.</h2>
+          <p>
+            Tabular Q-learning here is a teaching experiment, not a
+            market-making bot. No exchange, market data, orders, credentials or
+            money.
+          </p>
+          <a href="https://github.com/Aditya2375/quotientq"
+            >Source, CLI &amp; exact conventions ↗</a
+          >
+        </div>
+        <div>
+          <article>
+            <h3>A finite Markov decision problem</h3>
+            <p>
+              State is steps remaining (1..12), inventory (−2..2) and observed
+              signal (−1/+1). The signal predicts an up move with probability
+              0.35 or 0.65 and persists with probability 0.7. Time is in the
+              state; step 12 is true termination, not an arbitrary training
+              cutoff. Mid starts at 100; each step moves ±1.
+            </p>
+          </article>
+          <article>
+            <h3>Quotes before future draws</h3>
+            <p>
+              Tight quotes sit 0.5 from mid; wide quotes 1.5. Skew quotes 1.5 on
+              the inventory-increasing side and 0.5 on the reducing side (1/1
+              when flat). Side fill probability is 0.4/(1+distance) times an
+              adverse/benign multiplier: 1.5/0.5 in training, 2.5/0.2 in stress.
+              Buys are adverse on down moves, sells on up moves. The environment
+              couples fills to the later move; the policy cannot see that move
+              or its uniforms.
+            </p>
+          </article>
+          <article>
+            <h3>Cash is not the objective</h3>
+            <p>
+              Buy/sell fills happen at opening quotes, then mid moves. One lot
+              per side, both cap checks against prior inventory. Fee is 0.03 per
+              fill. Reward = marked-wealth change −0.08 × after-fill inventory²,
+              less 0.25 per terminal unit for forced exit. Unlimited
+              funding/borrow and exit liquidity are assumed. No queue, latency,
+              partial fills or exchange mechanics.
+            </p>
+          </article>
+          <article>
+            <h3>Sample, freeze, evaluate</h3>
+            <p>
+              Zero-initialized Q updates use α = 1 / (1 + 0.05 N), ε = 0.2 and
+              undiscounted max-next-Q targets. Terminal continuation is zero.
+              Test and oracle never enter training. The greedy policy uses the
+              first action within 10⁻¹² of the maximum, for numerical ties.
+              Fixed seeds and finite budgets prove no convergence, robustness or
+              real profitability.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section class="sources">
+        <p class="eyebrow">CONCEPT REFERENCES / ORIGINAL IMPLEMENTATION</p>
+        <a href="https://www.gatsby.ucl.ac.uk/%7Edayan/papers/cjch.pdf"
+          >Watkins &amp; Dayan: Q-learning ↗</a
+        ><a href="https://arxiv.org/pdf/1804.04216"
+          >Spooner et al.: market making via RL ↗</a
+        ><a href="https://farama.org/Gymnasium-Terminated-Truncated-Step-API"
+          >Farama: true termination ↗</a
+        >
+      </section>
+    </main>
+    <footer>
+      <a class="brand" href="#">quotient<span>Q</span></a>
+      <p>A small table. Explicit assumptions.</p>
+      <span>MIT · Aditya Kulkarni</span>
+    </footer>
+  </body>
+</html>
